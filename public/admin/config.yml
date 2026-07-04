@@ -5,7 +5,7 @@ backend:
   name: github
   repo: zerisinyu/personal-website
   branch: main
-  # base_url: https://YOUR-OAUTH-RELAY.workers.dev   # ← required for login
+  base_url: https://sveltia-cms-auth.zerisinyu.workers.dev
 
 # Fallback media location (collections below keep media next to content).
 media_folder: public/uploads
