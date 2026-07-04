@@ -1,0 +1,66 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Figure from '../../components/Figure.astro';
+import Gallery from '../../components/Gallery.astro';
+import TwoColumn from '../../components/TwoColumn.astro';
+import FullBleed from '../../components/FullBleed.astro';
+import Video from '../../components/Video.astro';
+import { url } from '../../lib/site';
+
+export async function getStaticPaths() {
+  // Only case-study projects get an auto-rendered detail page; custom and
+  // external projects link elsewhere from the index.
+  const projects = await getCollection(
+    'projects',
+    ({ data }) => data.type === 'case-study' && !data.draft
+  );
+  return projects.map((project) => ({
+    params: { slug: project.id },
+    props: { project },
+  }));
+}
+
+const { project } = Astro.props;
+const { title, summary, year, tags } = project.data;
+const { Content } = await render(project);
+
+// Layout components are available in .mdx bodies without imports.
+const components = { Figure, Gallery, TwoColumn, FullBleed, Video };
+---
+
+<Base title={title} description={summary}>
+  <article>
+    <header class="prose project-header">
+      <p class="small muted">
+        <a href={url('/work')}>Work</a> · {year}
+        {tags.length > 0 && <span> · {tags.join(', ')}</span>}
+      </p>
+      <h1>{title}</h1>
+      <p class="summary muted">{summary}</p>
+    </header>
+    <div class="prose">
+      <Content components={components} />
+    </div>
+  </article>
+</Base>
+
+<style>
+  .project-header {
+    margin-bottom: var(--space-4);
+  }
+
+  .project-header h1 {
+    font-size: var(--text-xl);
+    margin: var(--space-1) 0;
+  }
+
+  .project-header .summary {
+    font-size: var(--text-md);
+    margin: 0;
+  }
+
+  .project-header a:hover {
+    color: var(--color-accent);
+  }
+</style>

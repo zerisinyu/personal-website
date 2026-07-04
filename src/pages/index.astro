@@ -1,0 +1,45 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import { SITE } from '../site.config';
+import { url, sortProjects } from '../lib/site';
+
+const all = await getCollection('projects', ({ data }) => !data.draft);
+const featured = sortProjects(all.filter((p) => p.data.featured));
+// Fall back to everything if nothing is marked featured yet.
+const shown = featured.length > 0 ? featured : sortProjects(all);
+---
+
+<Base>
+  <p class="tagline">{SITE.tagline}</p>
+
+  <section aria-label="Selected work">
+    <ul class="project-grid">
+      {shown.map((project) => <ProjectCard project={project} />)}
+    </ul>
+    <p class="all-link">
+      <a href={url('/work')}>All work →</a>
+    </p>
+  </section>
+</Base>
+
+<style>
+  .tagline {
+    max-width: 34rem;
+    font-size: var(--text-lg);
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+    font-weight: 500;
+    margin: 0 0 var(--space-5);
+  }
+
+  .all-link {
+    margin-top: var(--space-4);
+    font-size: var(--text-sm);
+  }
+
+  .all-link a:hover {
+    color: var(--color-accent);
+  }
+</style>

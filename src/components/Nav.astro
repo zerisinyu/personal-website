@@ -1,0 +1,69 @@
+---
+import { SITE } from '../site.config';
+import { url } from '../lib/site';
+
+const links = [
+  { label: 'Work', href: '/work' },
+  { label: 'Blog', href: '/blog' },
+  { label: 'About', href: '/about' },
+];
+
+const current = Astro.url.pathname;
+const isActive = (href: string) => current.startsWith(url(href));
+---
+
+<header class="site-header">
+  <nav class="container" aria-label="Main">
+    <a class="wordmark" href={url('/')}>{SITE.title}</a>
+    <ul>
+      {
+        links.map((link) => (
+          <li>
+            <a
+              href={url(link.href)}
+              aria-current={isActive(link.href) ? 'page' : undefined}
+            >
+              {link.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+</header>
+
+<style>
+  .site-header {
+    padding-block: var(--space-3);
+  }
+
+  nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .wordmark {
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+
+  ul {
+    display: flex;
+    gap: var(--space-3);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: var(--text-sm);
+  }
+
+  ul a {
+    color: var(--color-muted);
+    transition: color 0.15s ease;
+  }
+
+  ul a:hover,
+  ul a[aria-current='page'] {
+    color: var(--color-ink);
+  }
+</style>

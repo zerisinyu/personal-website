@@ -1,0 +1,27 @@
+---
+// Video wrapper. Put mp4 files in public/ (they must not go through the
+// image pipeline) and reference them with a base-relative path:
+//   <Video src="/projects/demo.mp4" />
+import { url } from '../lib/site';
+
+interface Props {
+  src: string; // path under public/, e.g. /projects/demo.mp4
+  caption?: string;
+  autoplay?: boolean;
+}
+
+const { src, caption, autoplay = false } = Astro.props;
+const resolved = src.startsWith('http') ? src : url(src);
+---
+
+<figure>
+  <video
+    src={resolved}
+    controls={!autoplay}
+    autoplay={autoplay}
+    loop={autoplay}
+    muted={autoplay}
+    playsinline
+  ></video>
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>

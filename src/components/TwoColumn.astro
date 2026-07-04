@@ -1,0 +1,28 @@
+---
+// Text and image side by side. Usage in .mdx:
+//   <TwoColumn>
+//     <div slot="left">Some text…</div>
+//     <div slot="right">![alt](./chart.png)</div>
+//   </TwoColumn>
+---
+
+<div class="two-column">
+  <div><slot name="left" /></div>
+  <div><slot name="right" /></div>
+</div>
+
+<style>
+  .two-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+    align-items: start;
+    margin-block: 2em;
+  }
+
+  @media (max-width: 40rem) {
+    .two-column {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

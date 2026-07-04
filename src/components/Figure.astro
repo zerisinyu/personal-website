@@ -1,0 +1,27 @@
+---
+// Centred image with an optional caption, for use in .mdx project pages:
+//   <Figure src={myImage} alt="..." caption="..." />
+// `src` accepts an imported image (recommended, goes through Astro's
+// optimisation) or a plain string path for files in public/ (GIFs, etc.).
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  src: ImageMetadata | string;
+  alt?: string;
+  caption?: string;
+}
+
+const { src, alt = '', caption } = Astro.props;
+---
+
+<figure>
+  {
+    typeof src === 'string' ? (
+      <img src={src} alt={alt} loading="lazy" />
+    ) : (
+      <Image src={src} alt={alt} />
+    )
+  }
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>

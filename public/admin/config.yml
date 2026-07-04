@@ -1,0 +1,64 @@
+# Sveltia CMS configuration.
+# Login requires a GitHub OAuth app + a small OAuth relay (e.g. a Cloudflare
+# Worker). See "Editing in the browser" in the README, then fill in base_url.
+backend:
+  name: github
+  repo: zerisinyu/personal-website
+  branch: main
+  # base_url: https://YOUR-OAUTH-RELAY.workers.dev   # ← required for login
+
+# Fallback media location (collections below keep media next to content).
+media_folder: public/uploads
+public_folder: /personal-website/uploads
+
+collections:
+  - name: blog
+    label: Blog
+    folder: src/content/blog
+    create: true
+    extension: md
+    format: yaml-frontmatter
+    slug: '{{slug}}'
+    # Images uploaded while writing a post land next to the post file and are
+    # referenced with relative paths, matching the local workflow.
+    media_folder: ''
+    public_folder: ''
+    fields:
+      - { name: title, label: Title, widget: string }
+      - { name: date, label: Date, widget: datetime, format: 'YYYY-MM-DD' }
+      - { name: summary, label: Summary, widget: string, required: false }
+      - { name: tags, label: Tags, widget: list, default: [], required: false }
+      - { name: draft, label: Draft, widget: boolean, default: false }
+      - { name: body, label: Body, widget: markdown }
+
+  - name: projects
+    label: Projects
+    folder: src/content/projects
+    create: true
+    extension: md
+    format: yaml-frontmatter
+    # One folder per project: the entry file is <slug>/index.md and uploaded
+    # images live in the same folder.
+    path: '{{slug}}/index'
+    media_folder: ''
+    public_folder: ''
+    fields:
+      - { name: title, label: Title, widget: string }
+      - { name: summary, label: Summary, widget: string, hint: 'One line for cards and meta description' }
+      - { name: year, label: Year, widget: number, value_type: int }
+      - { name: tags, label: Tags, widget: list, default: [], required: false }
+      - { name: cover, label: Cover image, widget: image, required: false }
+      - name: type
+        label: Type
+        widget: select
+        options: [case-study, custom, external]
+        default: case-study
+      - name: href
+        label: Link (custom/external only)
+        widget: string
+        required: false
+        hint: 'custom: internal path like /work/my-page — external: full URL'
+      - { name: featured, label: Featured, widget: boolean, default: false }
+      - { name: draft, label: Draft, widget: boolean, default: false }
+      - { name: order, label: Order, widget: number, required: false, value_type: int }
+      - { name: body, label: Body, widget: markdown }

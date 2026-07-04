@@ -1,0 +1,84 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
+import { sortProjects } from '../../lib/site';
+
+const projects = sortProjects(
+  await getCollection('projects', ({ data }) => !data.draft)
+);
+const tags = [...new Set(projects.flatMap((p) => p.data.tags))].sort();
+---
+
+<Base title="Work">
+  <h1 class="page-title">Work</h1>
+
+  {
+    tags.length > 1 && (
+      <ul class="tag-list filter" aria-label="Filter by tag">
+        <li>
+          <button data-tag="" aria-pressed="true">
+            All
+          </button>
+        </li>
+        {tags.map((tag) => (
+          <li>
+            <button data-tag={tag} aria-pressed="false">
+              {tag}
+            </button>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+
+  <ul class="project-grid">
+    {projects.map((project) => <ProjectCard project={project} />)}
+  </ul>
+</Base>
+
+<style>
+  .filter {
+    margin-bottom: var(--space-4);
+  }
+
+  .filter button {
+    font: inherit;
+    font-size: var(--text-sm);
+    color: var(--color-muted);
+    background: none;
+    border: none;
+    padding: 0.15rem 0;
+    cursor: pointer;
+  }
+
+  .filter button:hover {
+    color: var(--color-ink);
+  }
+
+  .filter button[aria-pressed='true'] {
+    color: var(--color-accent);
+  }
+
+  .filter li + li {
+    margin-left: var(--space-2);
+  }
+</style>
+
+<script>
+  // Progressive enhancement: filter the grid by tag. Without JS the full
+  // grid simply shows everything.
+  const buttons = document.querySelectorAll<HTMLButtonElement>('.filter button');
+  const cards = document.querySelectorAll<HTMLElement>('.project-card-item');
+
+  buttons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const tag = button.dataset.tag ?? '';
+      buttons.forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
+      cards.forEach((card) => {
+        const cardTags = (card.dataset.tags ?? '').split(' ');
+        card.style.display = !tag || cardTags.includes(tag) ? '' : 'none';
+      });
+    });
+  });
+</script>

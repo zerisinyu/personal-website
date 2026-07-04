@@ -1,0 +1,32 @@
+---
+import { Image } from 'astro:assets';
+import type { CollectionEntry } from 'astro:content';
+import { projectHref } from '../lib/site';
+
+interface Props {
+  project: CollectionEntry<'projects'>;
+}
+
+const { project } = Astro.props;
+const { title, summary, year, cover, type, tags } = project.data;
+const href = projectHref(project);
+const external = type === 'external';
+---
+
+<li class="project-card-item" data-tags={tags.join(' ')}>
+  <a
+    class="project-card"
+    href={href}
+    target={external ? '_blank' : undefined}
+    rel={external ? 'noopener noreferrer' : undefined}
+  >
+    <div class="thumb">
+      {cover && <Image src={cover} alt="" widths={[480, 800, 1200]} sizes="(max-width: 40rem) 100vw, 33vw" />}
+    </div>
+    <div class="meta">
+      <span class="title">{title}{external && <span aria-hidden="true"> ↗</span>}</span>
+      <span class="year">{year}</span>
+    </div>
+    <p class="summary">{summary}</p>
+  </a>
+</li>

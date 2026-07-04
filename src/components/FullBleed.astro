@@ -1,0 +1,23 @@
+---
+// Stretches its content beyond the prose column up to the site width.
+// Usage in .mdx:
+//   <FullBleed>![alt](./wide-shot.png)</FullBleed>
+---
+
+<div class="bleed full-bleed">
+  <slot />
+</div>
+
+<style>
+  .full-bleed {
+    margin-block: 2em;
+  }
+
+  .full-bleed :global(p) {
+    margin: 0;
+  }
+
+  .full-bleed :global(img) {
+    width: 100%;
+  }
+</style>

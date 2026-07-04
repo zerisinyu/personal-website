@@ -1,0 +1,117 @@
+---
+// Example of a `custom`-type project: a hand-built interactive page that
+// lives inside the site shell. Replace the demo chart below with your real
+// work — D3, Observable Plot, or any client-side library is fine here.
+import Base from '../../layouts/Base.astro';
+import { url } from '../../lib/site';
+---
+
+<Base
+  title="Fertility & perceived fairness"
+  description="An interactive exploration of the relationship between fertility rates and perceived fairness."
+>
+  <article>
+    <header class="prose header">
+      <p class="small muted"><a href={url('/work')}>Work</a> · 2025</p>
+      <h1>Fertility &amp; perceived fairness</h1>
+      <p class="muted">
+        Demo of a hand-built interactive page. Hover the points.
+      </p>
+    </header>
+
+    <div class="chart-wrap">
+      <svg id="scatter" viewBox="0 0 640 400" role="img" aria-label="Scatter plot demo"></svg>
+      <div id="tooltip" class="tooltip small" hidden></div>
+    </div>
+  </article>
+</Base>
+
+<style>
+  .header {
+    margin-bottom: var(--space-4);
+  }
+
+  .header h1 {
+    font-size: var(--text-xl);
+    margin: var(--space-1) 0;
+  }
+
+  .chart-wrap {
+    position: relative;
+    max-width: 40rem;
+    margin-inline: auto;
+  }
+
+  svg {
+    width: 100%;
+    height: auto;
+  }
+
+  .tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--color-ink);
+    color: var(--color-bg);
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    transform: translate(-50%, -130%);
+    white-space: nowrap;
+  }
+</style>
+
+<script>
+  // Placeholder data + vanilla-SVG scatter, just to prove the pattern.
+  const data = Array.from({ length: 40 }, (_, i) => ({
+    fairness: 2 + Math.random() * 7,
+    fertility: 1 + Math.random() * 1.8,
+    label: `Region ${i + 1}`,
+  }));
+
+  const svg = document.getElementById('scatter')!;
+  const tooltip = document.getElementById('tooltip')!;
+  const W = 640;
+  const H = 400;
+  const M = { top: 20, right: 20, bottom: 40, left: 48 };
+
+  const x = (v: number) => M.left + ((v - 1) / 9) * (W - M.left - M.right);
+  const y = (v: number) => H - M.bottom - ((v - 0.8) / 2.4) * (H - M.top - M.bottom);
+
+  const ns = 'http://www.w3.org/2000/svg';
+  const el = (tag: string, attrs: Record<string, string | number>) => {
+    const node = document.createElementNS(ns, tag);
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v));
+    return node;
+  };
+
+  // axes
+  svg.append(
+    el('line', { x1: M.left, y1: H - M.bottom, x2: W - M.right, y2: H - M.bottom, stroke: '#161616' }),
+    el('line', { x1: M.left, y1: M.top, x2: M.left, y2: H - M.bottom, stroke: '#161616' })
+  );
+  const xLabel = el('text', { x: W / 2, y: H - 8, 'text-anchor': 'middle', 'font-size': 12, fill: '#6f6f6f' });
+  xLabel.textContent = 'Perceived fairness →';
+  const yLabel = el('text', { x: 14, y: H / 2, 'font-size': 12, fill: '#6f6f6f', transform: `rotate(-90 14 ${H / 2})`, 'text-anchor': 'middle' });
+  yLabel.textContent = 'Fertility rate →';
+  svg.append(xLabel, yLabel);
+
+  for (const d of data) {
+    const dot = el('circle', {
+      cx: x(d.fairness),
+      cy: y(d.fertility),
+      r: 5,
+      fill: '#2b29d4',
+      'fill-opacity': 0.7,
+    });
+    dot.addEventListener('mouseenter', () => {
+      tooltip.textContent = `${d.label}: fairness ${d.fairness.toFixed(1)}, fertility ${d.fertility.toFixed(2)}`;
+      tooltip.hidden = false;
+      const pt = svg.getBoundingClientRect();
+      tooltip.style.left = `${(x(d.fairness) / W) * pt.width}px`;
+      tooltip.style.top = `${(y(d.fertility) / H) * pt.height}px`;
+    });
+    dot.addEventListener('mouseleave', () => {
+      tooltip.hidden = true;
+    });
+    svg.append(dot);
+  }
+</script>

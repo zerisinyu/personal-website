@@ -1,0 +1,35 @@
+---
+import { SITE } from '../site.config';
+import { url } from '../lib/site';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container">
+    <!--
+      Newsletter slot: when an RSS-to-email service (e.g. Buttondown) is set
+      up, replace this block with its subscribe form. Until then, RSS is the
+      subscription channel.
+    -->
+    <p class="small muted">
+      © {year} {SITE.author} ·
+      <a href={url('/rss.xml')}>RSS</a>
+    </p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    padding-block: var(--space-5) var(--space-4);
+  }
+
+  a {
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+  }
+
+  a:hover {
+    color: var(--color-accent);
+  }
+</style>
