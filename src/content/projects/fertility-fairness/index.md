@@ -6,7 +6,7 @@ tags:
   - data-viz
   - research
 cover: ./cover.png
-type: custom
+type: external
 href: https://zerisinyu.github.io/ADI_CapstoneProject_Data_Decisions/
 featured: true
 order: null
