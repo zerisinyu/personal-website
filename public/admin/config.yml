@@ -51,13 +51,17 @@ collections:
       - name: type
         label: Type
         widget: select
-        options: [case-study, custom, external]
+        hint: 'Choose External for any link to another website — including your own project hosted elsewhere on GitHub Pages, Observable, etc.'
+        options:
+          - { label: 'Case study — write the story below, page is built automatically', value: case-study }
+          - { label: 'Custom — a page you hand-built inside this site', value: custom }
+          - { label: 'External — links out to another website', value: external }
         default: case-study
       - name: href
-        label: Link (custom/external only)
+        label: Link (only for Custom or External)
         widget: string
         required: false
-        hint: 'custom: internal path like /work/my-page — external: full URL'
+        hint: 'External: paste the full URL (https://…). Custom: an internal path like /work/my-page.'
       - { name: featured, label: Featured, widget: boolean, default: false }
       - { name: draft, label: Draft, widget: boolean, default: false }
       - { name: order, label: Order, widget: number, required: false, value_type: int }

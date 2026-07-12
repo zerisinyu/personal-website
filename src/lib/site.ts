@@ -9,6 +9,10 @@ export function url(path: string): string {
 /** Resolve where a project card should link to, based on its type. */
 export function projectHref(project: CollectionEntry<'projects'>): string {
   const { type, href } = project.data;
+  // A full URL in `href` always means an outbound link, even if `type` was
+  // set to `custom` by mistake — prevents it being mangled into a bogus
+  // internal path like /personal-website/https://...
+  if (href && /^https?:\/\//.test(href)) return href;
   if (type === 'external' && href) return href;
   if (type === 'custom' && href) return url(href);
   return url(`/work/${project.id}`);
