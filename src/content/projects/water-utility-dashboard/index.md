@@ -6,7 +6,7 @@ tags:
   - data-science
   - dashboard
 cover: ./cover.png
-type: custom
+type: external
 href: https://github.com/zerisinyu/ADI-Water-Dashboard
 featured: true
 order: null
