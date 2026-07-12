@@ -1,12 +1,15 @@
 ---
-title: Fertility & perceived fairness
-summary: A hand-built interactive exploration of correlation between fertility and perceived fairness.
+title: Fair Play, Over Fair Pay?
+summary: A little research project about correlation between fertility and perceived fairness in China.
 year: 2025
-tags: [data-viz, research]
+tags:
+  - data-viz
+  - research
 cover: ./cover.png
 type: custom
-href: /work/fertility-fairness
+href: https://zerisinyu.github.io/ADI_CapstoneProject_Data_Decisions/
 featured: true
+order: null
 ---
 
 This body is not rendered — `custom` projects link straight to their
