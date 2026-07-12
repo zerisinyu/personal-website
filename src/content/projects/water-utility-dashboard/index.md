@@ -1,14 +1,18 @@
 ---
-title: Water utility analytics dashboard
+title: Water utility performance dashboard
 summary: Forecasting and analytics dashboard for an African water utility, covering production, finance, and operations.
-year: 2024
-tags: [data-science, dashboard]
+year: 2025
+tags:
+  - data-science
+  - dashboard
 cover: ./cover.png
-type: case-study
+type: custom
+href: https://github.com/zerisinyu/ADI-Water-Dashboard
 featured: true
+order: null
 ---
 
-*This is a sample case-study project. Duplicate this folder, drop in your images, and edit `index.md` — the page below renders automatically.*
+_This is a sample case-study project. Duplicate this folder, drop in your images, and edit `index.md` — the page below renders automatically._
 
 ## Context
 
