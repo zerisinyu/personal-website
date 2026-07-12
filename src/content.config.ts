@@ -22,7 +22,13 @@ const projects = defineCollection({
       href: z.string().optional(),
       featured: z.boolean().default(false),
       draft: z.boolean().default(false),
-      order: z.number().optional(), // manual sort; falls back to year desc
+      // manual sort; falls back to year desc. Sveltia's number widget writes
+      // `null` (not just omitting the field) when left blank, so accept that too.
+      order: z
+        .number()
+        .nullable()
+        .optional()
+        .transform((v) => v ?? undefined),
     }),
 });
 
