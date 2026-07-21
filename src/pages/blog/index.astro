@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
+import HalftoneIcon from '../../components/HalftoneIcon.astro';
 import { url, formatDate } from '../../lib/site';
 
 const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
@@ -9,7 +10,10 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
 ---
 
 <Base title="Blog">
-  <h1 class="page-title">Blog</h1>
+  <div class="title-row">
+    <h1 class="page-title">Blog</h1>
+    <HalftoneIcon variant="blog" />
+  </div>
 
   <ul class="post-list">
     {
@@ -34,6 +38,17 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
 </Base>
 
 <style>
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+  }
+
+  .title-row .page-title {
+    margin-bottom: 0;
+  }
+
   .post-list {
     list-style: none;
     margin: 0;
@@ -53,7 +68,7 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
   }
 
   .post-title {
-    font-weight: 550;
+    font-weight: 450;
   }
 
   .post-list a:hover .post-title {

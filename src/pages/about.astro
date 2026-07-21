@@ -1,18 +1,149 @@
 ---
+import { getEntry, render } from 'astro:content';
+import { Image } from 'astro:assets';
 import Base from '../layouts/Base.astro';
+import HalftoneIcon from '../components/HalftoneIcon.astro';
+
+// Content lives in src/content/pages/about.md, editable in the CMS.
+const about = await getEntry('pages', 'about');
+if (!about) throw new Error('Missing src/content/pages/about.md');
+const { title, photo, linkedin, github, email } = about.data;
+const { Content } = await render(about);
+
+const socials = [
+  github && { label: 'GitHub', href: github, icon: 'github' },
+  linkedin && { label: 'LinkedIn', href: linkedin, icon: 'linkedin' },
+  email && { label: 'Email', href: `mailto:${email}`, icon: 'mail' },
+].filter(Boolean) as { label: string; href: string; icon: string }[];
 ---
 
-<Base title="About">
-  <div class="prose">
-    <h1>About</h1>
+<Base title={title}>
+  <div class="title-row">
+    <h1 class="page-title">{title}</h1>
+    <HalftoneIcon variant="about" />
+  </div>
 
-    <!-- PLACEHOLDER — replace with your own introduction. -->
-    <p>
-      This page is waiting for its owner. A short introduction goes here:
-      who you are, what you work on, and what you're looking for.
-    </p>
-    <p>
-      Contact: <a href="mailto:zeriyoungluvs7@gmail.com">email</a>
-    </p>
+  <div class="about-grid">
+    <div class="prose about-prose">
+      <Content />
+    </div>
+
+    <aside class="side">
+      {
+        photo ? (
+          <Image
+            class="photo"
+            src={photo}
+            alt={`Portrait of ${title === 'About' ? 'Sinyu Yang' : title}`}
+            widths={[400, 800]}
+            sizes="(max-width: 56rem) 100vw, 20rem"
+          />
+        ) : (
+          <div class="photo photo-placeholder" aria-hidden="true" />
+        )
+      }
+      {
+        socials.length > 0 && (
+          <ul class="socials" aria-label="Profiles">
+            {socials.map((s) => (
+              <li>
+                <a
+                  href={s.href}
+                  aria-label={s.label}
+                  target={s.icon === 'mail' ? undefined : '_blank'}
+                  rel={s.icon === 'mail' ? undefined : 'noopener noreferrer'}
+                >
+                  {s.icon === 'github' && (
+                    <svg viewBox="0 0 16 16" width="22" height="22" fill="currentColor" aria-hidden="true">
+                      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.42 7.42 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
+                    </svg>
+                  )}
+                  {s.icon === 'linkedin' && (
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
+                      <path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.36V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29ZM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12ZM7.12 20.45H3.55V9h3.57v11.45Z" />
+                    </svg>
+                  )}
+                  {s.icon === 'mail' && (
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                      <rect x="3" y="5" width="18" height="14" rx="1.5" />
+                      <path d="m3.5 6.5 8.5 7 8.5-7" />
+                    </svg>
+                  )}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </aside>
   </div>
 </Base>
+
+<style>
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+  }
+
+  .title-row .page-title {
+    margin-bottom: 0;
+  }
+
+  .about-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 10rem;
+    gap: var(--space-5);
+    align-items: start;
+  }
+
+  .about-prose {
+    margin-inline: 0;
+  }
+
+  .photo {
+    width: 100%;
+    height: auto;
+  }
+
+  /* halftone-flavoured slot until a photo is uploaded */
+  .photo-placeholder {
+    aspect-ratio: 4 / 5;
+    background-image: radial-gradient(
+      circle,
+      var(--color-faint) 1.2px,
+      transparent 1.3px
+    );
+    background-size: 7px 7px;
+  }
+
+  .socials {
+    display: flex;
+    gap: var(--space-2);
+    list-style: none;
+    margin: var(--space-2) 0 0;
+    padding: 0;
+  }
+
+  .socials a {
+    display: inline-flex;
+    color: var(--color-muted);
+    transition: color 0.15s ease;
+  }
+
+  .socials a:hover {
+    color: var(--color-ink);
+  }
+
+  @media (max-width: 56rem) {
+    .about-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .side {
+      order: -1;
+      max-width: 10rem;
+    }
+  }
+</style>

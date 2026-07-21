@@ -22,6 +22,11 @@ const projects = defineCollection({
       href: z.string().optional(),
       featured: z.boolean().default(false),
       draft: z.boolean().default(false),
+      // shown on the case-study detail page
+      tools: z.array(z.string()).default([]),
+      links: z
+        .array(z.object({ label: z.string(), url: z.string() }))
+        .default([]),
       // manual sort; falls back to year desc. Sveltia's number widget writes
       // `null` (not just omitting the field) when left blank, so accept that too.
       order: z
@@ -29,6 +34,19 @@ const projects = defineCollection({
         .nullable()
         .optional()
         .transform((v) => v ?? undefined),
+    }),
+});
+
+// Singleton pages edited via the CMS. Currently just About.
+const pages = defineCollection({
+  loader: glob({ pattern: 'about.{md,mdx}', base: './src/content/pages' }),
+  schema: ({ image }) =>
+    z.object({
+      title: z.string().default('About'),
+      photo: image().optional(),
+      linkedin: z.string().optional(),
+      github: z.string().optional(),
+      email: z.string().optional(),
     }),
 });
 
@@ -43,4 +61,4 @@ const blog = defineCollection({
   }),
 });
 
-export const collections = { projects, blog };
+export const collections = { projects, blog, pages };

@@ -1,0 +1,182 @@
+---
+/*
+  Small halftone companion icon for page titles — same language as the
+  hero animation: dot-grid rendering, film-grain jitter, one green accent.
+  The motif redraws with fresh jitter a few times a second, like a
+  pencil-drawn "boil". Variants: projects | blog | about.
+*/
+interface Props {
+  variant: 'projects' | 'blog' | 'about';
+}
+const { variant } = Astro.props;
+---
+
+<canvas class="halftone-icon" data-variant={variant} aria-hidden="true"
+></canvas>
+
+<style>
+  .halftone-icon {
+    width: 3rem;
+    height: 3rem;
+    flex-shrink: 0;
+  }
+</style>
+
+<script>
+  const GRID = 22;
+  const INK = '22, 22, 22';
+  const GREEN = '47, 125, 59';
+
+  type Ctx2D = CanvasRenderingContext2D;
+
+  function motifProjects(c: Ctx2D, j: (i: number) => number) {
+    // three bars + a rising green arrow
+    c.fillStyle = '#000';
+    const heights = [0.3, 0.48, 0.68];
+    heights.forEach((h, i) => {
+      const x = 0.16 + i * 0.28 + j(i);
+      c.fillRect(x, 0.9 - h + j(i + 3), 0.16, h);
+    });
+    c.strokeStyle = '#0c0';
+    c.lineWidth = 0.07;
+    c.lineCap = 'round';
+    c.beginPath();
+    c.moveTo(0.1 + j(6), 0.55 + j(7));
+    c.lineTo(0.82 + j(8), 0.12 + j(9));
+    c.stroke();
+    c.fillStyle = '#0c0';
+    c.beginPath();
+    c.moveTo(0.92 + j(8), 0.06 + j(9));
+    c.lineTo(0.64, 0.1);
+    c.lineTo(0.86, 0.32);
+    c.closePath();
+    c.fill();
+  }
+
+  function motifBlog(c: Ctx2D, j: (i: number) => number) {
+    // a pencil, tip down-left, over a fresh green squiggle
+    c.save();
+    c.translate(0.58 + j(0), 0.38 + j(1));
+    c.rotate(Math.PI / 4 + j(2) * 2);
+    c.fillStyle = '#000';
+    c.fillRect(-0.09, -0.38, 0.18, 0.5); // body
+    c.beginPath(); // tip
+    c.moveTo(-0.09, 0.12);
+    c.lineTo(0.09, 0.12);
+    c.lineTo(0, 0.3);
+    c.closePath();
+    c.fill();
+    c.restore();
+
+    c.strokeStyle = '#0c0';
+    c.lineWidth = 0.07;
+    c.lineCap = 'round';
+    c.beginPath();
+    c.moveTo(0.08 + j(3), 0.86 + j(4));
+    c.quadraticCurveTo(0.28, 0.74 + j(5), 0.44 + j(6), 0.84);
+    c.quadraticCurveTo(0.56, 0.9, 0.62 + j(7), 0.8 + j(8));
+    c.stroke();
+  }
+
+  function motifAbout(c: Ctx2D, j: (i: number) => number) {
+    // a waving hand: palm + fingers + thumb, green motion arcs
+    const rr = (x: number, y: number, w: number, h: number, r: number) => {
+      c.beginPath();
+      if ('roundRect' in c) c.roundRect(x, y, w, h, r);
+      else c.rect(x, y, w, h);
+      c.fill();
+    };
+    c.save();
+    c.translate(0.46 + j(0), 0.6 + j(1));
+    c.rotate(-0.28 + j(2));
+    c.fillStyle = '#000';
+    rr(-0.17, -0.06, 0.34, 0.3, 0.07); // palm
+    for (let i = 0; i < 4; i++) {
+      const x = -0.16 + i * 0.089;
+      const h = 0.19 + [0.02, 0.06, 0.045, -0.01][i];
+      rr(x, -0.06 - h, 0.072, h + 0.06, 0.036); // fingers
+    }
+    c.beginPath(); // thumb
+    c.ellipse(0.2, 0.07, 0.12, 0.048, 0.85, 0, Math.PI * 2);
+    c.fill();
+    c.restore();
+    // wave marks
+    c.strokeStyle = '#0c0';
+    c.lineWidth = 0.055;
+    c.lineCap = 'round';
+    c.beginPath();
+    c.arc(0.86 + j(3), 0.3 + j(4), 0.09, Math.PI * 0.85, Math.PI * 1.55);
+    c.stroke();
+    c.beginPath();
+    c.arc(0.88 + j(5), 0.32 + j(6), 0.19, Math.PI * 0.9, Math.PI * 1.45);
+    c.stroke();
+  }
+
+  const MOTIFS: Record<string, (c: Ctx2D, j: (i: number) => number) => void> = {
+    projects: motifProjects,
+    blog: motifBlog,
+    about: motifAbout,
+  };
+
+  function paintIcon(canvas: HTMLCanvasElement) {
+    const motif = MOTIFS[canvas.dataset.variant ?? 'about'] ?? motifAbout;
+    const ctx = canvas.getContext('2d')!;
+    const off = document.createElement('canvas');
+    off.width = off.height = GRID;
+    const octx = off.getContext('2d', { willReadFrequently: true })!;
+
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const cssSize = canvas.getBoundingClientRect().width || 48;
+    const size = Math.round(cssSize * dpr);
+    canvas.width = canvas.height = size;
+    const cell = size / GRID;
+
+    // one static frame; the jitter keeps the hand-drawn look
+    const seed = Math.random() * 1000;
+    const j = (i: number) =>
+      ((Math.sin((seed + i) * 127.1) * 43758.5453) % 1) * 0.045;
+
+    octx.setTransform(1, 0, 0, 1, 0, 0);
+    octx.fillStyle = '#fff';
+    octx.fillRect(0, 0, GRID, GRID);
+    octx.setTransform(GRID, 0, 0, GRID, 0, 0);
+    motif(octx, j);
+
+    const data = octx.getImageData(0, 0, GRID, GRID).data;
+    ctx.clearRect(0, 0, size, size);
+    const inkPath = new Path2D();
+    const greenPath = new Path2D();
+    for (let gy = 0; gy < GRID; gy++) {
+      for (let gx = 0; gx < GRID; gx++) {
+        const o = (gy * GRID + gx) * 4;
+        const r = data[o];
+        const g = data[o + 1];
+        const b = data[o + 2];
+        const dark = 1 - (0.45 * r + 0.25 * g + 0.3 * b) / 255;
+        if (dark < 0.16) continue;
+        const cx = (gx + 0.5) * cell + (Math.random() - 0.5) * cell * 0.2;
+        const cy = (gy + 0.5) * cell + (Math.random() - 0.5) * cell * 0.2;
+        const rad = cell * 0.58 * Math.min(1, dark + (Math.random() - 0.5) * 0.15);
+        const p = g > r + 40 ? greenPath : inkPath;
+        p.moveTo(cx + rad, cy);
+        p.arc(cx, cy, rad, 0, Math.PI * 2);
+      }
+    }
+    ctx.fillStyle = `rgba(${INK}, 0.92)`;
+    ctx.fill(inkPath);
+    ctx.fillStyle = `rgba(${GREEN}, 0.94)`;
+    ctx.fill(greenPath);
+  }
+
+  // astro:page-load fires on first load and after every ClientRouter
+  // navigation, so freshly swapped-in icons get painted too.
+  document.addEventListener('astro:page-load', () => {
+    document
+      .querySelectorAll<HTMLCanvasElement>('canvas.halftone-icon')
+      .forEach((canvas) => {
+        if (canvas.dataset.painted) return;
+        canvas.dataset.painted = '1';
+        paintIcon(canvas);
+      });
+  });
+</script>

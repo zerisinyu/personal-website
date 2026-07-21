@@ -6,10 +6,16 @@ tags:
   - data-science
   - dashboard
 cover: ./cover.png
-type: external
-href: https://github.com/zerisinyu/ADI-Water-Dashboard
+type: case-study
 featured: true
 order: null
+tools:
+  - Python
+  - pandas
+  - Streamlit
+links:
+  - label: GitHub
+    url: https://github.com/zerisinyu/ADI-Water-Dashboard
 ---
 
 _This is a sample case-study project. Duplicate this folder, drop in your images, and edit `index.md` — the page below renders automatically._

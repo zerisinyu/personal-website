@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import ProjectCard from '../../components/ProjectCard.astro';
+import HalftoneIcon from '../../components/HalftoneIcon.astro';
 import { sortProjects } from '../../lib/site';
 
 const projects = sortProjects(
@@ -10,8 +11,11 @@ const projects = sortProjects(
 const tags = [...new Set(projects.flatMap((p) => p.data.tags))].sort();
 ---
 
-<Base title="Work">
-  <h1 class="page-title">Work</h1>
+<Base title="Projects">
+  <div class="title-row">
+    <h1 class="page-title">Projects</h1>
+    <HalftoneIcon variant="projects" />
+  </div>
 
   {
     tags.length > 1 && (
@@ -38,6 +42,17 @@ const tags = [...new Set(projects.flatMap((p) => p.data.tags))].sort();
 </Base>
 
 <style>
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+  }
+
+  .title-row .page-title {
+    margin-bottom: 0;
+  }
+
   .filter {
     margin-bottom: var(--space-4);
   }
@@ -67,17 +82,23 @@ const tags = [...new Set(projects.flatMap((p) => p.data.tags))].sort();
 
 <script>
   // Progressive enhancement: filter the grid by tag. Without JS the full
-  // grid simply shows everything.
-  const buttons = document.querySelectorAll<HTMLButtonElement>('.filter button');
-  const cards = document.querySelectorAll<HTMLElement>('.project-card-item');
+  // grid simply shows everything. Re-bound after every ClientRouter
+  // navigation since the DOM is swapped out.
+  document.addEventListener('astro:page-load', () => {
+    const buttons =
+      document.querySelectorAll<HTMLButtonElement>('.filter button');
+    const cards = document.querySelectorAll<HTMLElement>('.project-card-item');
 
-  buttons.forEach((button) => {
-    button.addEventListener('click', () => {
-      const tag = button.dataset.tag ?? '';
-      buttons.forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
-      cards.forEach((card) => {
-        const cardTags = (card.dataset.tags ?? '').split(' ');
-        card.style.display = !tag || cardTags.includes(tag) ? '' : 'none';
+    buttons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const tag = button.dataset.tag ?? '';
+        buttons.forEach((b) =>
+          b.setAttribute('aria-pressed', String(b === button))
+        );
+        cards.forEach((card) => {
+          const cardTags = (card.dataset.tags ?? '').split(' ');
+          card.style.display = !tag || cardTags.includes(tag) ? '' : 'none';
+        });
       });
     });
   });

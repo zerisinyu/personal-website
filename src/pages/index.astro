@@ -2,44 +2,99 @@
 import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import ProjectCard from '../components/ProjectCard.astro';
+import HeroHalftone from '../components/HeroHalftone.astro';
 import { SITE } from '../site.config';
 import { url, sortProjects } from '../lib/site';
 
 const all = await getCollection('projects', ({ data }) => !data.draft);
 const featured = sortProjects(all.filter((p) => p.data.featured));
 // Fall back to everything if nothing is marked featured yet.
-const shown = featured.length > 0 ? featured : sortProjects(all);
+const shown = (featured.length > 0 ? featured : sortProjects(all)).slice(0, 3);
 ---
 
 <Base>
-  <p class="tagline">{SITE.tagline}</p>
+  <section class="hero">
+    <h1 class="tagline">{SITE.tagline}</h1>
+    <HeroHalftone />
+  </section>
 
-  <section aria-label="Selected work">
-    <ul class="project-grid">
+  <section class="featured" aria-label="Selected work">
+    <ul class="featured-grid">
       {shown.map((project) => <ProjectCard project={project} />)}
     </ul>
     <p class="all-link">
-      <a href={url('/work')}>All work →</a>
+      <a href={url('/work')}>All Work →</a>
     </p>
   </section>
 </Base>
 
 <style>
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: var(--space-4);
+    align-items: center;
+    margin-block: var(--space-3) var(--space-6);
+  }
+
   .tagline {
-    max-width: 34rem;
-    font-size: var(--text-lg);
-    line-height: 1.35;
-    letter-spacing: -0.01em;
-    font-weight: 500;
-    margin: 0 0 var(--space-5);
+    font-family: var(--font-display);
+    /* Handjet variable axes: light weight, round dot elements */
+    font-weight: 300;
+    font-variation-settings: 'ELGR' 1, 'ELSH' 2;
+    font-size: clamp(2rem, 3.4vw, 3rem);
+    line-height: 1.28;
+    letter-spacing: 0.01em;
+    margin: 0;
+  }
+
+  .featured-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-4) var(--space-5);
+    list-style: none;
+    margin: 0 auto;
+    padding: 0;
+    max-width: 52rem;
+  }
+
+  /* the staggered rhythm from the wireframe */
+  .featured-grid > :global(li:nth-child(2)) {
+    margin-top: var(--space-5);
+  }
+
+  /* home cards are caption-only: name + year, no summary */
+  .featured-grid :global(.summary) {
+    display: none;
   }
 
   .all-link {
-    margin-top: var(--space-4);
-    font-size: var(--text-sm);
+    margin-top: var(--space-5);
+    font-size: var(--text-base);
+  }
+
+  .all-link a {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
   }
 
   .all-link a:hover {
     color: var(--color-accent);
+  }
+
+  @media (max-width: 56rem) {
+    .hero {
+      grid-template-columns: 1fr;
+      margin-block: var(--space-2) var(--space-5);
+    }
+
+    .featured-grid {
+      grid-template-columns: 1fr;
+      padding: 0;
+    }
+
+    .featured-grid > :global(li:nth-child(2)) {
+      margin-top: 0;
+    }
   }
 </style>

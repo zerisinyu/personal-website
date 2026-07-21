@@ -19,7 +19,7 @@ const { Content } = await render(post);
 <Base title={title} description={summary}>
   <article class="prose">
     <header class="post-header">
-      <h1>{title}</h1>
+      <h1 class="display">{title}</h1>
       <p class="small muted">
         <time datetime={date.toISOString()}>{formatDate(date)}</time>
       </p>
@@ -37,7 +37,7 @@ const { Content } = await render(post);
   }
 
   .post-header h1 {
-    font-size: var(--text-xl);
+    font-size: clamp(2.2rem, 3.4vw, 3rem);
     margin-bottom: var(--space-1);
   }
 

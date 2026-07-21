@@ -1,0 +1,513 @@
+---
+/*
+  Halftone hero animation. Three looping scenes rendered as a dithered
+  dot grid with film grain — sprout → trend from data points → three
+  hands assembling a jigsaw puzzle. Vector scenes are drawn on a tiny
+  offscreen canvas and sampled per cell into dots; ticked at ~12fps on
+  purpose for the 80s-film feel. Green is the only colour, carried across
+  all scenes.
+*/
+---
+
+<div class="halftone-wrap">
+  <canvas
+    id="hero-halftone"
+    role="img"
+    aria-label="Animated halftone illustration: a sprout grows, becomes a rising trend line through data points, then three hands assemble a jigsaw puzzle."
+  ></canvas>
+</div>
+
+<style>
+  .halftone-wrap {
+    aspect-ratio: 12 / 7;
+    overflow: hidden;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+</style>
+
+<script>
+  let canvas: HTMLCanvasElement;
+  let ctx: CanvasRenderingContext2D;
+
+  const GRID_W = 104; // halftone columns; rows follow the aspect ratio
+  const INK = '22, 22, 22'; // rgb of --color-ink
+  const GREEN = '47, 125, 59';
+  const HOLD = 4600; // ms a scene stays
+  const TRANS = 1400; // ms of noise-dissolve between scenes
+  const TICK = 1000 / 12; // deliberately choppy, film-like
+
+  const offA = document.createElement('canvas');
+  const offB = document.createElement('canvas');
+  const ctxA = offA.getContext('2d', { willReadFrequently: true })!;
+  const ctxB = offB.getContext('2d', { willReadFrequently: true })!;
+
+  let W = 0;
+  let H = 0;
+  let gridH = 0;
+  let cell = 0; // cell size in device px
+  let AR = 0.58; // gridH / GRID_W, scene y-space is [0, AR]
+  let thresholds = new Float32Array(0); // per-cell dissolve order
+
+  function resize() {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    W = Math.round(rect.width * dpr);
+    H = Math.round(rect.height * dpr);
+    canvas.width = W;
+    canvas.height = H;
+    cell = W / GRID_W;
+    gridH = Math.max(1, Math.round(H / cell));
+    AR = gridH / GRID_W;
+    offA.width = offB.width = GRID_W;
+    offA.height = offB.height = gridH;
+    thresholds = new Float32Array(GRID_W * gridH);
+    for (let i = 0; i < thresholds.length; i++) thresholds[i] = Math.random();
+  }
+
+  /* ----- tiny helpers ---------------------------------------------------- */
+  const clamp01 = (t: number) => (t < 0 ? 0 : t > 1 ? 1 : t);
+  const ease = (t: number) => {
+    t = clamp01(t);
+    return t * t * (3 - 2 * t);
+  };
+  // deterministic pseudo-random for stable scene geometry
+  const rnd = (i: number) => {
+    const x = Math.sin(i * 127.1 + 311.7) * 43758.5453;
+    return x - Math.floor(x);
+  };
+
+  type Ctx2D = CanvasRenderingContext2D;
+
+  function line(c: Ctx2D, x1: number, y1: number, x2: number, y2: number) {
+    c.beginPath();
+    c.moveTo(x1, y1);
+    c.lineTo(x2, y2);
+    c.stroke();
+  }
+
+  /* ----- scene 1: sprout ------------------------------------------------- */
+  function drawSprout(c: Ctx2D, p: number) {
+    const yy = (f: number) => f * AR;
+    const groundY = yy(0.84);
+
+    // ground + soil ticks
+    c.strokeStyle = '#000';
+    c.lineWidth = 0.007;
+    line(c, 0.1, groundY, 0.9, groundY);
+    for (let i = 0; i < 9; i++) {
+      const x = 0.14 + i * 0.09 + rnd(i) * 0.03;
+      line(c, x, groundY + 0.012, x + 0.014, groundY + 0.012);
+    }
+
+    // stem: quadratic curve traced up to `grow`
+    const grow = ease(p / 0.65);
+    const P0 = [0.5, groundY];
+    const P1 = [0.455, yy(0.55)];
+    const P2 = [0.52, yy(0.26)];
+    c.strokeStyle = '#0c0';
+    c.lineWidth = 0.016;
+    c.lineCap = 'round';
+    c.beginPath();
+    const SEG = 26;
+    const upto = Math.max(1, Math.floor(SEG * grow));
+    for (let i = 0; i <= upto; i++) {
+      const t = (i / SEG) * grow;
+      const mt = 1 - t;
+      const x = mt * mt * P0[0] + 2 * mt * t * P1[0] + t * t * P2[0];
+      const y = mt * mt * P0[1] + 2 * mt * t * P1[1] + t * t * P2[1];
+      i === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
+    }
+    c.stroke();
+
+    // leaves unfold once the stem is tall enough
+    const leaf = (
+      fx: number,
+      fy: number,
+      angle: number,
+      len: number,
+      s: number
+    ) => {
+      if (s <= 0) return;
+      c.save();
+      c.translate(fx, fy);
+      c.rotate(angle);
+      c.scale(ease(s), ease(s));
+      c.fillStyle = '#0c0';
+      c.beginPath();
+      c.ellipse(len / 2, 0, len / 2, len / 4.6, 0, 0, Math.PI * 2);
+      c.fill();
+      c.restore();
+    };
+    leaf(0.472, yy(0.52), Math.PI * 0.82, 0.15, (p - 0.45) / 0.3);
+    leaf(0.5, yy(0.4), -Math.PI * 0.22, 0.13, (p - 0.6) / 0.3);
+
+    // a couple of specks above the tip once fully grown
+    if (p > 0.88) {
+      c.fillStyle = '#0c0';
+      const s = ease((p - 0.88) / 0.12);
+      c.beginPath();
+      c.arc(0.55, yy(0.18), 0.008 * s, 0, Math.PI * 2);
+      c.arc(0.49, yy(0.14), 0.006 * s, 0, Math.PI * 2);
+      c.fill();
+    }
+  }
+
+  /* ----- scene 2: trend out of data points ------------------------------- */
+  function drawTrend(c: Ctx2D, p: number) {
+    const yy = (f: number) => f * AR;
+
+    // axes
+    c.strokeStyle = '#000';
+    c.lineWidth = 0.006;
+    c.lineCap = 'butt';
+    c.beginPath();
+    c.moveTo(0.13, yy(0.14));
+    c.lineTo(0.13, yy(0.82));
+    c.lineTo(0.9, yy(0.82));
+    c.stroke();
+
+    // scatter: squares popping in one by one, loosely rising
+    const N = 13;
+    for (let i = 0; i < N; i++) {
+      const at = 0.04 + (i / N) * 0.34;
+      const s = ease((p - at) / 0.1);
+      if (s <= 0) continue;
+      const x = 0.19 + (i / (N - 1)) * 0.62;
+      const y = yy(0.7 - (i / (N - 1)) * 0.38 + (rnd(i + 40) - 0.5) * 0.17);
+      const r = 0.011 * s;
+      c.fillStyle = '#000';
+      c.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+
+    // trend line drawing itself through the cloud, then an arrowhead
+    const q = ease((p - 0.42) / 0.48);
+    if (q > 0) {
+      const x1 = 0.17;
+      const y1 = yy(0.71);
+      const x2 = x1 + (0.86 - x1) * q;
+      const y2 = y1 + (yy(0.24) - y1) * q;
+      c.strokeStyle = '#0c0';
+      c.lineWidth = 0.014;
+      c.lineCap = 'round';
+      line(c, x1, y1, x2, y2);
+      if (q > 0.97) {
+        const ang = Math.atan2(y2 - y1, x2 - x1);
+        c.fillStyle = '#0c0';
+        c.beginPath();
+        c.moveTo(x2 + Math.cos(ang) * 0.04, y2 + Math.sin(ang) * 0.04);
+        c.lineTo(
+          x2 + Math.cos(ang + 2.5) * 0.032,
+          y2 + Math.sin(ang + 2.5) * 0.032
+        );
+        c.lineTo(
+          x2 + Math.cos(ang - 2.5) * 0.032,
+          y2 + Math.sin(ang - 2.5) * 0.032
+        );
+        c.closePath();
+        c.fill();
+      }
+    }
+  }
+
+  /* ----- scene 3: a jigsaw puzzle assembling itself -----------------------
+     Four small pieces glide in from the four corners and interlock in the
+     centre — line-art, lots of whitespace. The last piece carries the green
+     through-line. */
+  const KNOB_SIGN = 1; // flip if tabs read as notches
+
+  // One puzzle edge from (x0,y0)→(x1,y1); t ∈ {-1,0,1} bumps a knob outward.
+  function knobEdge(
+    c: Ctx2D,
+    x0: number,
+    y0: number,
+    x1: number,
+    y1: number,
+    t: number
+  ) {
+    if (t === 0) {
+      c.lineTo(x1, y1);
+      return;
+    }
+    const dx = x1 - x0;
+    const dy = y1 - y0;
+    const L = Math.hypot(dx, dy);
+    c.save();
+    c.translate(x0, y0);
+    c.rotate(Math.atan2(dy, dx));
+    const KH = 0.19 * L * t * KNOB_SIGN; // knob peak height, signed
+    c.lineTo(0.42 * L, 0);
+    c.bezierCurveTo(0.34 * L, -0.6 * KH, 0.29 * L, -KH, 0.5 * L, -KH);
+    c.bezierCurveTo(0.71 * L, -KH, 0.66 * L, -0.6 * KH, 0.58 * L, 0);
+    c.lineTo(L, 0);
+    c.restore();
+  }
+
+  // Trace one piece clockwise; edges = [top, right, bottom, left].
+  function piecePath(
+    c: Ctx2D,
+    mx: number,
+    my: number,
+    s: number,
+    edges: [number, number, number, number]
+  ) {
+    const h = s / 2;
+    const tl: [number, number] = [mx - h, my - h];
+    const tr: [number, number] = [mx + h, my - h];
+    const br: [number, number] = [mx + h, my + h];
+    const bl: [number, number] = [mx - h, my + h];
+    c.beginPath();
+    c.moveTo(tl[0], tl[1]);
+    knobEdge(c, tl[0], tl[1], tr[0], tr[1], edges[0]);
+    knobEdge(c, tr[0], tr[1], br[0], br[1], edges[1]);
+    knobEdge(c, br[0], br[1], bl[0], bl[1], edges[2]);
+    knobEdge(c, bl[0], bl[1], tl[0], tl[1], edges[3]);
+    c.closePath();
+  }
+
+  function drawHands(c: Ctx2D, p: number) {
+    const cx = 0.5;
+    const cy = AR * 0.5;
+    const ps = 0.1; // small pieces → lots of whitespace
+    const off = ps / 2;
+
+    // 2x2 pieces with interlocking edges [top,right,bottom,left]; each glides
+    // in from its own corner. The last (green) settles a beat later.
+    const pieces: {
+      mx: number;
+      my: number;
+      edges: [number, number, number, number];
+      from: [number, number];
+      at: number;
+      green?: boolean;
+    }[] = [
+      { mx: cx - off, my: cy - off, edges: [0, 1, 1, 0], from: [-0.4, -0.34], at: 0.04 }, // TL
+      { mx: cx + off, my: cy - off, edges: [0, 0, 1, -1], from: [0.4, -0.34], at: 0.2 }, // TR
+      { mx: cx - off, my: cy + off, edges: [-1, 1, 0, 0], from: [-0.4, 0.34], at: 0.36 }, // BL
+      { mx: cx + off, my: cy + off, edges: [-1, 0, 0, -1], from: [0.42, 0.36], at: 0.54, green: true }, // BR
+    ];
+
+    pieces.forEach(({ mx, my, edges, from, at, green }) => {
+      const q = ease((p - at) / 0.26);
+      if (q <= 0) return;
+      const dx = (1 - q) * from[0];
+      const dy = (1 - q) * from[1];
+      c.save();
+      c.globalAlpha = Math.min(1, q * 1.6);
+      piecePath(c, mx + dx, my + dy, ps, edges);
+      c.fillStyle = green ? '#9c9' : '#fff';
+      c.fill();
+      c.strokeStyle = green ? '#0c0' : '#000';
+      c.lineWidth = 0.009;
+      c.stroke();
+      c.restore();
+    });
+
+    // a small green spark once the puzzle is whole
+    if (p > 0.9) {
+      const s = ease((p - 0.9) / 0.1);
+      c.strokeStyle = '#0c0';
+      c.lineWidth = 0.008;
+      c.lineCap = 'round';
+      const sx = cx + ps + 0.08;
+      const sy = cy - ps;
+      const r = 0.026 * s;
+      line(c, sx - r, sy, sx + r, sy);
+      line(c, sx, sy - r * 1.5, sx, sy + r * 1.5);
+    }
+  }
+
+  const SCENES = [drawSprout, drawTrend, drawHands];
+
+  function renderScene(c: Ctx2D, off: HTMLCanvasElement, idx: number, p: number) {
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.fillStyle = '#fff';
+    c.fillRect(0, 0, off.width, off.height);
+    c.setTransform(GRID_W, 0, 0, GRID_W, 0, 0);
+    SCENES[idx](c, clamp01(p));
+  }
+
+  /* ----- halftone compositor --------------------------------------------- */
+  function paint(now: number) {
+    const SEG = HOLD + TRANS;
+    const t = now % (SEG * SCENES.length);
+    const k = Math.floor(t / SEG);
+    const local = t - k * SEG;
+    const cur = k % SCENES.length;
+    const nxt = (k + 1) % SCENES.length;
+    // scenes finish animating at 78% of the hold, then rest
+    const pCur = local / (HOLD * 0.78);
+    const mix = local > HOLD ? (local - HOLD) / TRANS : 0;
+
+    renderScene(ctxA, offA, cur, pCur);
+    const dataA = ctxA.getImageData(0, 0, GRID_W, gridH).data;
+    let dataB: Uint8ClampedArray | null = null;
+    if (mix > 0) {
+      renderScene(ctxB, offB, nxt, 0); // next scene dissolves in at rest pose
+      dataB = ctxB.getImageData(0, 0, GRID_W, gridH).data;
+    }
+
+    ctx.clearRect(0, 0, W, H);
+    // slight global flicker, like an uneven projector lamp (kept gentle)
+    const lamp = 0.95 + Math.random() * 0.05;
+
+    // rare one-frame horizontal tear on a random row
+    const tearRow = Math.random() < 0.03 ? Math.floor(Math.random() * gridH) : -1;
+    const tearShift = (Math.random() < 0.5 ? -1 : 1) * cell * (1 + Math.random());
+
+    const maxR = cell * 0.62;
+
+    // Pencil texture: dots are slanted ellipses (a consistent shading
+    // direction) whose opacity varies like uneven graphite pressure.
+    // Batched into a few alpha buckets so fills stay cheap.
+    const inkAlphas = [0.38, 0.52, 0.68];
+    const inkPaths = inkAlphas.map(() => new Path2D());
+    const greenAlphas = [0.5, 0.72];
+    const greenPaths = greenAlphas.map(() => new Path2D());
+    const pathGrain = new Path2D();
+    const GRAIN_ANGLE = -0.55;
+
+    const addStroke = (p: Path2D, cx: number, cy: number, rad: number) => {
+      const rot = GRAIN_ANGLE + (Math.random() - 0.5) * 0.35;
+      const rx = rad * 1.18;
+      const ry = rad * 0.78;
+      p.moveTo(cx + rx * Math.cos(rot), cy + rx * Math.sin(rot));
+      p.ellipse(cx, cy, rx, ry, rot, 0, Math.PI * 2);
+    };
+
+    for (let gy = 0; gy < gridH; gy++) {
+      const rowShift = gy === tearRow ? tearShift : 0;
+      for (let gx = 0; gx < GRID_W; gx++) {
+        const i = gy * GRID_W + gx;
+        let o = i * 4;
+        let src = dataA;
+        if (dataB && thresholds[i] < mix) src = dataB;
+        const r = src[o];
+        const g = src[o + 1];
+        const b = src[o + 2];
+        const dark = 1 - (0.45 * r + 0.25 * g + 0.3 * b) / 255;
+        const isGreen = g > r + 40;
+
+        const cx =
+          (gx + 0.5) * cell + rowShift + (Math.random() - 0.5) * cell * 0.16;
+        const cy = (gy + 0.5) * cell + (Math.random() - 0.5) * cell * 0.16;
+
+        if (dark > 0.13) {
+          const rad =
+            maxR *
+            (0.35 + 0.65 * Math.min(1, dark + (Math.random() - 0.5) * 0.1));
+          if (isGreen) {
+            addStroke(greenPaths[(Math.random() * 2) | 0], cx, cy, rad);
+          } else {
+            addStroke(inkPaths[(Math.random() * 3) | 0], cx, cy, rad);
+          }
+        } else if (Math.random() < 0.45) {
+          // film grain over the empty field
+          const rad = cell * (0.05 + Math.random() * 0.09);
+          pathGrain.moveTo(cx + rad, cy);
+          pathGrain.arc(cx, cy, rad, 0, Math.PI * 2);
+        }
+      }
+    }
+
+    ctx.fillStyle = `rgba(${INK}, ${0.09 * lamp})`;
+    ctx.fill(pathGrain);
+    inkPaths.forEach((p, i) => {
+      ctx.fillStyle = `rgba(${INK}, ${inkAlphas[i] * lamp})`;
+      ctx.fill(p);
+    });
+    greenPaths.forEach((p, i) => {
+      ctx.fillStyle = `rgba(${GREEN}, ${greenAlphas[i] * lamp})`;
+      ctx.fill(p);
+    });
+  }
+
+  /* ----- run loop --------------------------------------------------------- */
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let running = false;
+  let rafId = 0;
+  let last = 0;
+
+  function frame(now: number) {
+    if (!running) return;
+    rafId = requestAnimationFrame(frame);
+    if (now - last < TICK) return;
+    last = now;
+    paint(now);
+  }
+
+  function start() {
+    if (running || reducedMotion.matches) return;
+    running = true;
+    rafId = requestAnimationFrame(frame);
+  }
+
+  function stop() {
+    running = false;
+    cancelAnimationFrame(rafId);
+  }
+
+  function staticFrame() {
+    // reduced motion: one grown-sprout frame, no flicker loop
+    paint(HOLD * 0.78);
+  }
+
+  // Init on every page the hero appears on; astro:page-load also fires on
+  // the initial load. Listeners are torn down before ClientRouter swaps the
+  // page out, so navigating away and back never stacks them.
+  document.addEventListener('astro:page-load', () => {
+    const el = document.getElementById('hero-halftone');
+    if (!(el instanceof HTMLCanvasElement) || el.dataset.init) return;
+    el.dataset.init = '1';
+    canvas = el;
+    ctx = canvas.getContext('2d')!;
+
+    resize();
+    if (reducedMotion.matches) staticFrame();
+    else start();
+
+    const ac = new AbortController();
+    const { signal } = ac;
+    window.addEventListener(
+      'resize',
+      () => {
+        resize();
+        if (reducedMotion.matches) staticFrame();
+      },
+      { signal }
+    );
+    document.addEventListener(
+      'visibilitychange',
+      () => (document.hidden ? stop() : start()),
+      { signal }
+    );
+    const observer = new IntersectionObserver((entries) =>
+      entries[0].isIntersecting ? start() : stop()
+    );
+    observer.observe(canvas);
+    reducedMotion.addEventListener(
+      'change',
+      () => {
+        if (reducedMotion.matches) {
+          stop();
+          staticFrame();
+        } else start();
+      },
+      { signal }
+    );
+    document.addEventListener(
+      'astro:before-swap',
+      () => {
+        stop();
+        observer.disconnect();
+        ac.abort();
+      },
+      { once: true }
+    );
+  });
+</script>

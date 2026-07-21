@@ -12,6 +12,23 @@ media_folder: public/uploads
 public_folder: /personal-website/uploads
 
 collections:
+  - name: pages
+    label: Pages
+    files:
+      - name: about
+        label: About
+        file: src/content/pages/about.md
+        # Uploaded photo lands next to the file and is referenced relatively.
+        media_folder: ''
+        public_folder: ''
+        fields:
+          - { name: title, label: Title, widget: string, default: About }
+          - { name: photo, label: Photo, widget: image, required: false }
+          - { name: linkedin, label: LinkedIn URL, widget: string, required: false }
+          - { name: github, label: GitHub URL, widget: string, required: false }
+          - { name: email, label: Email, widget: string, required: false }
+          - { name: body, label: Body, widget: markdown }
+
   - name: blog
     label: Blog
     folder: src/content/blog
@@ -64,5 +81,14 @@ collections:
         hint: 'External: paste the full URL (https://…). Custom: an internal path like /work/my-page.'
       - { name: featured, label: Featured, widget: boolean, default: false }
       - { name: draft, label: Draft, widget: boolean, default: false }
+      - { name: tools, label: Tools, widget: list, default: [], required: false, hint: 'Shown on the case-study page, e.g. Python, pandas, D3' }
+      - name: links
+        label: Links
+        widget: list
+        required: false
+        hint: 'Outbound links shown on the case-study page (GitHub repo, live demo, report…)'
+        fields:
+          - { name: label, label: Label, widget: string }
+          - { name: url, label: URL, widget: string }
       - { name: order, label: Order, widget: number, required: false, value_type: int }
       - { name: body, label: Body, widget: markdown }

@@ -1,9 +1,14 @@
 ---
+import { getCollection } from 'astro:content';
 import { SITE } from '../site.config';
 import { url } from '../lib/site';
 
+const projectCount = (
+  await getCollection('projects', ({ data }) => !data.draft)
+).length;
+
 const links = [
-  { label: 'Work', href: '/work' },
+  { label: 'Projects', href: '/work', count: projectCount },
   { label: 'Blog', href: '/blog' },
   { label: 'About', href: '/about' },
 ];
@@ -23,7 +28,11 @@ const isActive = (href: string) => current.startsWith(url(href));
               href={url(link.href)}
               aria-current={isActive(link.href) ? 'page' : undefined}
             >
-              {link.label}
+              {link.label}{
+                link.count !== undefined && (
+                  <sup class="count">{link.count}</sup>
+                )
+              }
             </a>
           </li>
         ))
@@ -65,5 +74,10 @@ const isActive = (href: string) => current.startsWith(url(href));
   ul a:hover,
   ul a[aria-current='page'] {
     color: var(--color-ink);
+  }
+
+  .count {
+    font-size: 0.7em;
+    margin-left: 0.1em;
   }
 </style>
